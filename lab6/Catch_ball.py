@@ -5,7 +5,7 @@ from numpy import sin, cos, pi
 
 pygame.init()
 
-FPS = 30
+FPS = 60
 screen = pygame.display.set_mode((1200, 700))
 
 RED = (255, 0, 0)
@@ -38,7 +38,7 @@ def move_ball(ball):
     r = ball[2]
     color = ball[3]
     angle = ball[4]
-    circle(screen, (0, 0, 0), (x, y), r + 2)
+    circle(screen, (0, 0, 0), (x, y), r + 5)
     ball[0] += l * cos(ball[4] * pi / 180)
     ball[1] += l * sin(ball[4] * pi / 180)
     circle(screen, color, (x, y), r)

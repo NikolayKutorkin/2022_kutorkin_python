@@ -9,14 +9,15 @@ pygame.init()
 # Настройка параметров
 HEIGHT = 600  # Высота скрина
 WIDTH = 1200  # Ширина скрина
-BALLS_NUMBER = 2  # Количесво шаров
-SQUARES_NUMBER = 2  # Количество квадратов
+BALLS_NUMBER = 5  # Количесво шаров
+SQUARES_NUMBER = 5  # Количество квадратов
 FPS = 30
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-MAX_SPEED = 50  # Максимальная скорость шаров и квадратов
-MIN_SPEED = 20  # Минимальная скорость шаров и квадратов
+MAX_SPEED = 100  # Максимальная скорость шаров и квадратов
+MIN_SPEED = 50  # Минимальная скорость шаров и квадратов
 g = 10  # Ускорение свободного падения. Сила тяжести действует только на квадраты
 SCORE = 0
+BOOST = 2
 
 # Создание палитры
 RED = (255, 0, 0)
@@ -44,7 +45,7 @@ def new_ball():
     """
     x = randint(100, WIDTH - 100)
     y = randint(100, HEIGHT - 100)
-    r = randint(10, 100)
+    r = randint(10, 60)
     v_x = choice([-1, 1]) * randint(MIN_SPEED, MAX_SPEED)
     v_y = choice([-1, 1]) * randint(MIN_SPEED, MAX_SPEED)
     color = COLORS[randint(0, 5)]
@@ -67,8 +68,8 @@ def new_square():
     side = randint(30, 100)
     x = randint(100, WIDTH - side - 100)
     y = randint(100, HEIGHT - side - 100)
-    v_x = choice([-1, 1]) * randint(MIN_SPEED, MAX_SPEED)
-    v_y = choice([-1, 1]) * randint(MIN_SPEED, MAX_SPEED)
+    v_x = choice([-1, 1]) * randint(MIN_SPEED * BOOST, MAX_SPEED * BOOST)
+    v_y = choice([-1, 1]) * randint(MIN_SPEED * BOOST, MAX_SPEED * BOOST)
     color = COLORS[randint(0, 5)]
     return [x, y, side, v_x, v_y, color, 'square']
 
@@ -120,7 +121,7 @@ def reborn_(figure):
         # [0, 1, 2,   3,   4,     5]
         figure[0] = randint(100, WIDTH - 100)  # x
         figure[1] = randint(100, HEIGHT - 100)  # y
-        figure[2] = randint(10, 100)  # r
+        figure[2] = randint(10, 60)  # r
         figure[3] = choice([-1, 1]) * randint(MIN_SPEED, MAX_SPEED)  # v_x
         figure[4] = choice([-1, 1]) * randint(MIN_SPEED, MAX_SPEED)  # v_y
         figure[5] = COLORS[randint(0, 5)]  # color
@@ -130,8 +131,8 @@ def reborn_(figure):
         figure[0] = randint(100, WIDTH - 100)  # x
         figure[1] = randint(100, HEIGHT - 100)  # y
         figure[2] = randint(30, 100)  # a
-        figure[3] = choice([-1, 1]) * randint(MIN_SPEED, MAX_SPEED)  # v_x
-        figure[4] = choice([-1, 1]) * randint(MIN_SPEED, MAX_SPEED)  # v_y
+        figure[3] = choice([-1, 1]) * randint(MIN_SPEED * BOOST, MAX_SPEED * BOOST)  # v_x
+        figure[4] = choice([-1, 1]) * randint(MIN_SPEED * BOOST, MAX_SPEED * BOOST)  # v_y
         figure[5] = COLORS[randint(0, 5)]  # color
 
 
@@ -189,10 +190,10 @@ def hitting_the_wall(figure):
         # [x, y, side, v_x, v_y, color]
         # [0, 1, 2,   3,   4,     5]
         if WIDTH <= figure[0] + figure[2] or figure[0] <= 0:
-            figure[3] = -1 * figure[3] / abs(figure[3]) * randint(MIN_SPEED, MAX_SPEED)
+            figure[3] = -1 * figure[3] / abs(figure[3]) * randint(MIN_SPEED * BOOST, MAX_SPEED * BOOST)
 
         elif HEIGHT <= figure[1] + figure[2] or figure[1] <= 0:
-            figure[4] = -1 * figure[4] / abs(figure[4]) * randint(MIN_SPEED, MAX_SPEED)
+            figure[4] = -1 * figure[4] / abs(figure[4]) * randint(MIN_SPEED * BOOST, MAX_SPEED * BOOST)
 
 
 def score_(figure):

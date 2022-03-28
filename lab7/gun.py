@@ -115,10 +115,10 @@ class Gun:
         self.an = 1
         self.color = GREY
 
-        # Parameters of the gun's figure
+        # Параметры фигуры орудия
         self.down_left = [20, 450]
-        self.up_side = 30
-        self.lateral_side = 20
+        self.up_side = 15
+        self.lateral_side = 6
 
     def fire2_start(self, event):
         self.f2_on = 1
@@ -133,9 +133,9 @@ class Gun:
         bullet += 1
         new_ball = Ball(self.screen)
         new_ball.r += 5
-        self.an = math.atan2((event.pos[1] - new_ball.y), (event.pos[0] - new_ball.x))
+        self.an = math.atan((450 - event.pos[1]) / (event.pos[0] - 20))
         new_ball.vx = self.f2_power * math.cos(self.an)
-        new_ball.vy = - self.f2_power * math.sin(self.an)
+        new_ball.vy = - self.f2_power * math.sin(-self.an)
         balls.append(new_ball)
         self.f2_on = 0
         self.f2_power = 10
@@ -163,12 +163,12 @@ class Gun:
     def power_up(self):
         if self.f2_on:
             if self.f2_power < 100:
-                self.f2_power += 1
-                self.up_side += 5
+                self.f2_power += 2
+                self.up_side += 2
             self.color = RED
         else:
             self.color = GREY
-            self.up_side = 30
+            self.up_side = 15
 
 
 class Target:
@@ -222,6 +222,9 @@ check = 1
 while not finished:
 
     screen.fill(WHITE)
+    num_of_bullets = pygame.font.Font(None, 24)
+    text = num_of_bullets.render(str(bullet), True, (0, 0, 0))
+    screen.blit(text, (10, 10))
     gun.draw()
     if target.live == 1:
         target.draw()
@@ -233,7 +236,8 @@ while not finished:
             check = 1
 
     for b in balls:
-        b.draw()
+        if b.live > 0:
+            b.draw()
     pygame.display.update()
 
     clock.tick(FPS)
@@ -248,9 +252,10 @@ while not finished:
             gun.targetting(event)
 
     for b in balls:
-        b.move()
+        if b.live > 0:
+            b.move()
+            b.live -= 0.2
         if b.hittest(target) and target.live:
-            print('bom')
             target.live = 0
             target.hit()
             target.new_target()

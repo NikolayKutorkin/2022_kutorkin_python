@@ -123,14 +123,14 @@ class Gun:
     def fire2_start(self, event):
         self.f2_on = 1
 
-    def fire2_end(self, event):
+    def fire2_end(self, event, balls):
         """Выстрел мячом.
 
         Происходит при отпускании кнопки мыши.
         Начальные значения компонент скорости мяча vx и vy зависят от положения мыши.
         """
-        global balls, bullet
-        bullet += 1
+
+
         new_ball = Ball(self.screen)
         new_ball.r += 5
         self.an = math.atan((450 - event.pos[1]) / (event.pos[0] - 20))
@@ -185,7 +185,7 @@ class Target:
         """ Инициализация новой цели. """
         x = self.x = rnd(600, 780)
         y = self.y = rnd(300, 550)
-        r = self.r = rnd(2, 50)
+        r = self.r = rnd(10, 50)
         color = self.color = RED
 
     def hit(self, points=1):
@@ -217,23 +217,27 @@ clock = pygame.time.Clock()
 gun = Gun(screen)
 target = Target(screen)
 finished = False
-check = 1
+check = 0
 
 while not finished:
 
     screen.fill(WHITE)
-    num_of_bullets = pygame.font.Font(None, 24)
-    text = num_of_bullets.render(str(bullet), True, (0, 0, 0))
-    screen.blit(text, (10, 10))
+    num_of_hits = pygame.font.Font(None, 24)
+    text1 = num_of_hits.render(str(target.points), True, (0, 0, 0))
+    screen.blit(text1, (10, 10))
     gun.draw()
     if target.live == 1:
         target.draw()
     else:
+        num_of_bullets = pygame.font.Font(None, 30)
+        text2 = num_of_hits.render('Вы уничтожили цель за '+ str(bullet) + ' выстрелов',
+                                   True, (0, 0, 0))
+        screen.blit(text2, (250, 300))
         check += 1
-        print(check)
         if check == 50:
             target.live = 1
-            check = 1
+            bullet = 0
+            check = 0
 
     for b in balls:
         if b.live > 0:
@@ -245,9 +249,12 @@ while not finished:
         if event.type == pygame.QUIT:
             finished = True
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            gun.fire2_start(event)
+            if not check:
+                gun.fire2_start(event)
         elif event.type == pygame.MOUSEBUTTONUP:
-            gun.fire2_end(event)
+            if not check:
+                gun.fire2_end(event, balls)
+                bullet += 1
         elif event.type == pygame.MOUSEMOTION:
             gun.targetting(event)
 

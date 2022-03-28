@@ -9,13 +9,13 @@ pygame.init()
 # Настройка параметров
 HEIGHT = 600  # Высота скрина
 WIDTH = 1200  # Ширина скрина
-BALLS_NUMBER = 5  # Количесво шаров
-SQUARES_NUMBER = 5  # Количество квадратов
-FPS = 30
+BALLS_NUMBER = 40  # Количесво шаров
+SQUARES_NUMBER = 40  # Количество квадратов
+FPS = 60
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-MAX_SPEED = 100  # Максимальная скорость шаров и квадратов
+MAX_SPEED = 70  # Максимальная скорость шаров и квадратов
 MIN_SPEED = 50  # Минимальная скорость шаров и квадратов
-g = 10  # Ускорение свободного падения. Сила тяжести действует только на квадраты
+g = 15  # Ускорение свободного падения. Сила тяжести действует только на квадраты
 SCORE = 0
 BOOST = 2
 
@@ -193,7 +193,10 @@ def hitting_the_wall(figure):
             figure[3] = -1 * figure[3] / abs(figure[3]) * randint(MIN_SPEED * BOOST, MAX_SPEED * BOOST)
 
         elif HEIGHT <= figure[1] + figure[2] or figure[1] <= 0:
-            figure[4] = -1 * figure[4] / abs(figure[4]) * randint(MIN_SPEED * BOOST, MAX_SPEED * BOOST)
+            if figure[4] == 0:
+                figure[4] = randint(MIN_SPEED * BOOST, MAX_SPEED * BOOST)
+            else:
+                figure[4] = -1 * figure[4] / abs(figure[4]) * randint(MIN_SPEED * BOOST, MAX_SPEED * BOOST)
 
 
 def score_(figure):
@@ -224,39 +227,53 @@ def add_result(name, score):
     :param score: Количество очков, резултат игрока
     :return:
     """
-    bests = []  # создание листа для работы сданными из файла
-    with open('Lists of the best of the best.txt') as f:
-        for string in f:
-            temp = string.rstrip()  # избавление от знака '\n' в конце каждой строки
-            temp = temp.split()  # преврашение строки в список ('name score' -> ['name', 'score'])
-            bests.append(temp)  # добавление пары ['name', 'score'] в список
+    bests = []  # создание листа для работы с данными из файла
+    temp = open('Lists of the best of the best.txt')
+    if len(temp.readline()) == 0:
+        temp.close()
+        temp = open('Lists of the best of the best.txt', 'w')
+        print(name, score, file=temp)
+        temp.close()
+    else:
+        temp.close()
+        with open('Lists of the best of the best.txt') as f:
+            # Чтение файла
+            for string in f:
+                temp = string.rstrip()  # избавление от знака '\n' в конце каждой строки
+                temp = temp.split()  # преврашение строки в список ('name score' -> ['name', 'score'])
+                bests.append(temp)  # добавление пары ['name', 'score'] в список
 
-    with open('Lists of the best of the best.txt', 'w') as file:
-        # Проверка совпадения имени
-        check = 0
-        for j in range(len(bests)):
-            if str(name) == bests[j][0]:
-                if score <= int(bests[j][1]):  # Если name набрал меньше очков, чем раньше, то весь файл не меняется
-                    check = 1  # даёт условие, при котором цикл вставки результата пропускается
-                    break
-                else:
-                    bests.pop(j)  # Если name набрал больше очков, чем раньше, его старый результат удаляется
+        with open('Lists of the best of the best.txt', 'w') as file:
+            # Проверка совпадения имени
+            check = 0
+            for j in range(len(bests)):
+                if str(name) == bests[j][0]:
+                    if score <= int(bests[j][1]):  # Если name набрал меньше очков, чем раньше, то весь файл не меняется
+                        check = 1  # даёт условие, при котором цикл вставки результата пропускается
+                        break
+                    else:
+                        bests.pop(j)  # Если name набрал больше очков, чем раньше, его старый результат удаляется
 
-        # Вставка результата
-        if check == 0:
-            for k in range(len(bests)):
-                # Результат сравнивается сначала с натбольшим результатом списка, потом с меньшим.
-                # Как только находится результат, равный или меньший результату name, результат name сразу
-                # вставляется выше найденного результата.
-                if score >= int(bests[k][1]):
-                    score = str(score)
-                    bests.insert(k, [name, score])
-                    break
+            # Вставка результата
+            if check == 0:
+                flag = 1
+                for k in range(len(bests)):
+                    # Результат сравнивается сначала с наибольшим результатом списка, потом с меньшим.
+                    # Как только находится результат, равный или меньший результату name, результат name сразу
+                    # вставляется выше найденного результата.
+                    if score >= int(bests[k][1]):
+                        score = str(score)
+                        bests.insert(k, [name, score])
+                        flag = 0
+                        break
+                # Если результат самый худший, он просто добавляется в конец списка
+                if flag:
+                    bests.append([name, score])
 
-        # Вывод полученного списка в файл. Имя и очки разделяюся пробелом
-        for element in bests:
-            element[1] = str(element[1])
-            print(' '.join(element), file=file)
+            # Вывод полученного списка в файл. Имя и очки разделяюся пробелом
+            for element in bests:
+                element[1] = str(element[1])
+                print(' '.join(element), file=file)
 
 
 pygame.display.update()

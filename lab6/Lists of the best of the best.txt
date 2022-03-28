@@ -1,2 +1,3 @@
-K 0
-Min 0
+Second 1300
+First 800
+Third 100

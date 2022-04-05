@@ -21,26 +21,84 @@ HEIGHT = 600
 
 
 def turn(point, angle, ref_point):
+    """
+    Поворачиает точку на угол относителбно опорной точки
+    :param point: координаты поворачиваемой точки
+    :param angle: угол поворота
+    :param ref_point: опорная точка
+    :return: кооридинта точки после поворота
+    """
     x1 = -(ref_point[0] - point[0]) * math.cos(angle) - (ref_point[1] - point[1]) * math.sin(angle)
     y1 = -(ref_point[0] - point[0]) * math.sin(angle) + (ref_point[1] - point[1]) * math.cos(angle)
     return x1 + ref_point[0], ref_point[1] - y1
 
 
 def replacing_coordinates(x0, y0, angle, x, y):
+    """
+    Замена системы координат
+    :param x0: координата x системы координат
+    :param y0: координата н системы координат
+    :param angle: угол поворота системы координат относительно изначальной
+    :param x: координата x точки в изначальной системе координат
+    :param y: координата y точки в изначальной системе координат
+    :return: кооординаты в новой системе координат
+    """
     x1 = (x - x0) * math.cos(angle) + (y - y0) * math.sin(angle)
     y1 = (y - y0) * math.cos(angle) - (x - x0) * math.sin(angle)
     return x1, y1
 
 
 def dist(x1, y1, x2, y2):
+    """
+    Расстояние между двумя точкми
+    :param x1: координат x первой точки
+    :param y1: координат y первой точки
+    :param x2: координат x второй точки
+    :param y2: координат y второй точки
+    :return: расстояние между точками
+    """
     distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
     return distance
 
-def border_control():
-    pass
+
+def border_control(figure, x, y, side):
+    """
+    Контролирует вылет объектов за границы экрана. При вылете телепортирует на границу.
+    :param figure: вид фигуры объекта
+    :param x: опорная координата x фигуры
+    :param y: опорная координата y фигуры
+    :param side: характерный размер (радиус для круга, сторона квадрата)
+    :return: опорные координты фигуры
+    """
+    if figure == 'ball':
+        if x < side:
+            x = side
+        if x > WIDTH - side:
+            x = WIDTH - side
+        if y < side:
+            y = side
+        if y > HEIGHT - side:
+            y = HEIGHT - side
+    else:
+        if x < 0:
+            x = 0
+        if x > WIDTH - side:
+            x = WIDTH - side
+        if y < 0:
+            y = 0
+        if y > HEIGHT - side:
+            y = HEIGHT - side
+    return x, y
+
 
 class Bullet:
     def __init__(self, object_screen, x0, y0):
+        """
+        Интерфейс снарядов для Gun
+        :param object_screen: экран, на котором находится снаряд
+        :param x0: начальная координата x снаряда
+        :param y0: начальная координата y снаряда
+        """
         self.screen = object_screen
         self.x = x0
         self.y = y0
@@ -52,41 +110,29 @@ class Bullet:
 
 
 class Ball(Bullet):
-    def __init__(self, screen, x0, y0):
-        """ Конструктор класса ball
-
-        Args:
-        x - начальное положение мяча по горизонтали
-        y - начальное положение мяча по вертикали
+    def __init__(self, object_screen, x0, y0):
         """
-        super().__init__(screen, x0, y0)
+        Создаёт снаряд в форме шара.
+        """
+        super().__init__(object_screen, x0, y0)
         self.r = 15
 
     def move(self):
-        """Переместить мяч по прошествии единицы времени.
+        """Переместить мяч по прошествии единицы времени с учётом дейсвия силы притяжения.
 
         Метод описывает перемещение мяча за один кадр перерисовки. То есть, обновляет значения
         self.x и self.y с учетом скоростей self.vx и self.vy, силы гравитации, действующей на мяч,
-        и стен по краям окна (размер окна 800х600).
+        и стен по краям окна.
         """
         if self.vy != 0:
             self.x += self.vx
             self.y -= self.vy + g / 2
             self.vy -= g
 
-        # Проверка, не вышел ли шар за стенку
-        if self.x < self.r:
-            self.x = self.r
-        if self.x > WIDTH - self.r:
-            self.x = WIDTH - self.r
-        if self.y < self.r:
-            self.y = self.r
-        if self.y > HEIGHT - self.r:
-            if abs(self.vy) < 11:
-                self.vy = 0
-            self.y = HEIGHT - self.r
+        self.x, self.y = border_control('ball', self.x, self.y, self.r)
+        if self.y >= HEIGHT - self.r and abs(self.vy) < 11:
+            self.vy = 0
 
-        # Удар о стенку
         if WIDTH <= self.x + self.r or self.x - self.r <= 0:
             self.vx = -1 * self.vx
         elif HEIGHT <= self.y + self.r or self.y - self.r <= 0:
@@ -94,67 +140,66 @@ class Ball(Bullet):
             self.vx = self.vx / 1.4
 
     def draw(self):
-        pygame.draw.circle(
-            self.screen,
-            self.color,
-            (self.x, self.y),
-            self.r
-        )
-        pygame.draw.circle(
-            self.screen,
-            'black',
-            (self.x, self.y),
-            self.r,
-            width=1
-        )
+        """
+        Рисует шар на экране с чёрной границей.
+        :return:
+        """
+        pygame.draw.circle(self.screen, self.color, (self.x, self.y), self.r)
+        pygame.draw.circle(self.screen, 'black', (self.x, self.y), self.r, width=1)
 
-    def hittest(self, obj):
+    def hit_test(self, obj):
         """Функция проверяет сталкивалкивается ли данный обьект с целью, описываемой в обьекте obj.
-
-        Args:
-            obj: Обьект, с которым проверяется столкновение.
-        Returns:
+            obj: Обьект, с которым проверяется столкновение. Может быть шаром или квадратом.
+            :return:
             Возвращает True в случае столкновения мяча и цели. В противном случае возвращает False.
         """
         if obj.figure == 'ball':
-            d = dist(self.x, self.y, obj.x, obj.y)
-            return d < self.r + obj.r
+            return dist(self.x, self.y, obj.x, obj.y) < self.r + obj.r
         if obj.figure == 'square':
-            x = obj.x
-            y = obj.y
-            a = obj.a
-            center_x = x + a / 2
-            center_y = y + a / 2
-            corners = [[x, y], [x + a, y], [x, y + a], [x + a, y + a]]
+            center_x = obj.x + obj.a / 2
+            center_y = obj.y + obj.a / 2
+            corners = [[obj.x, obj.y], [obj.x + obj.a, obj.y],
+                       [obj.x, obj.y + obj.a], [obj.x + obj.a, obj.y + obj.a]]
 
-            d = dist(self.x, self.y, center_x, center_y)
-            if d <= self.r + obj.a / 2:
+            if dist(self.x, self.y, center_x, center_y) <= self.r + obj.a / 2:
                 return True
             else:
                 for point in corners:
-                    d = dist(self.x, self.y, point[0], point[1])
-                    if d <= self.r:
+                    if dist(self.x, self.y, point[0], point[1]) <= self.r:
                         return True
 
         return False
 
 
 class Rect(Bullet):
-    def __init__(self, screen, x0, y0, angle):
-        super().__init__(screen, x0, y0)
+    def __init__(self, object_screen, x0, y0, angle):
+        """
+        Создаёт прямоуголный снаряд, пулю.
+        :param object_screen: экран, на котором находится снаряд
+        :param x0: начальная координата x снаряда
+        :param y0: начальная координата y снаряда
+        :param angle: угол, под которым выстреливается пуля
+        """
+        super().__init__(object_screen, x0, y0)
         self.an = angle
         self.vx = math.cos(self.an)
         self.vy = math.sin(self.an)
-
-        # Параметры фигуры пули
         self.up_side = 10
         self.lateral_side = 10
 
     def move(self):
+        """
+        Двигает пулю. Пуля пробивает стенки.
+        :return:
+        """
         self.x += self.vx
         self.y -= self.vy
 
     def draw(self):
+        """
+        Прорисовка пули.
+        :return:
+        """
         down_left = [self.x, self.y]
         down_right = [down_left[0] + self.up_side, down_left[1]]
         up_left = [down_left[0], -self.lateral_side + down_left[1]]
@@ -165,9 +210,14 @@ class Rect(Bullet):
                                                       turn(up_right, self.an, down_left),
                                                       turn(up_left, self.an, down_left)))
 
-    def hittest(self, obj):
+    def hit_test(self, obj):
+        """
+        Проверяет пулю на стооклновение с объектом.
+        :param obj: Объект может быть шаром(ball), квадратом(square), танком.
+        :return: Возвращает True пристолкновении. В ином сслучае False
+        """
+        up_right = [self.x + self.up_side, self.y]
         if obj.figure == 'ball':
-            up_right = [self.x + self.up_side, self.y]
             down_right = [self.x + self.up_side, self.y - self.lateral_side]
             points = [up_right, down_right]
             for point in points:
@@ -175,7 +225,6 @@ class Rect(Bullet):
                 return d <= obj.r
 
         elif obj.figure == 'square':
-            up_right = [self.x + self.up_side, self.y]
             down_right = [self.x + self.up_side, self.y + self.lateral_side]
             points = [up_right, down_right]
             for point in points:
@@ -184,7 +233,6 @@ class Rect(Bullet):
                 if 0 <= x <= obj.a and 0 <= y <= obj.a:
                     return True
         else:
-            up_right = [self.x + self.up_side, self.y]
             down_right = [self.x + self.up_side, self.y - self.lateral_side]
             points = [up_right, down_right]
             for point in points:
@@ -193,29 +241,34 @@ class Rect(Bullet):
 
 
 class Gun:
-    def __init__(self, screen, x0, y0):
-        self.screen = screen
+    def __init__(self, object_screen, x0, y0):
+        """
+        Интерфейс орудия.
+        :param object_screen: экран, на котром находится орудие
+        :param x0: координта x нижнего левого угла
+        :param y0: координта y нижнего левого угла
+        """
+        self.screen = object_screen
         self.f2_power = 10
         self.f2_on = 0
-        self.an = 1
+        self.an = 0
         self.color = GREY
         self.bullet_type = 0
         self.x = x0
         self.y = y0
-
-        # Параметры фигуры орудия
-        self.down_left = [x0, y0]
         self.up_side = 15
         self.lateral_side = 6
+        self.max_power = 70
 
     def fire2_start(self):
         self.f2_on = 1
 
-    def fire2_end(self, point, bullets):
-        """Выстрел мячом.
-
-        Происходит при отпускании кнопки мыши.
-        Начальные значения компонент скорости мяча vx и vy зависят от положения мыши.
+    def fire2_end(self, point, magazine):
+        """
+        Выстреливает снарядом, добавляя объект снаряда в список magazine
+        :param point: точка куда стрелять
+        :param magazine: список, в который добляетс новый объект снаряда
+        :return:
         """
         if point[0] > self.x:
             self.an = math.atan((self.y - point[1]) / (point[0] - self.x))
@@ -234,12 +287,16 @@ class Gun:
 
         new_bullet.vx = self.f2_power * math.cos(self.an)
         new_bullet.vy = self.f2_power * math.sin(self.an)
-        bullets.append(new_bullet)
+        magazine.append(new_bullet)
         self.f2_on = 0
         self.f2_power = 10
 
-    def targetting(self, point):
-        """Прицеливание. Зависит от положения мыши."""
+    def targeting(self, point):
+        """
+        Прицеливание. Меняет направление орудия в зависимости от положения мыши
+        :param point: точка, в которую направлено орудие
+        :return:
+        """
         if point[0] > self.x:
             self.an = math.atan((self.y - point[1]) / (point[0] - self.x))
         elif point[0] < self.x:
@@ -255,19 +312,27 @@ class Gun:
             self.color = GREY
 
     def draw(self):
+        """
+        Прорисовка орудия.
+        :return:
+        """
         down_left = [self.x, self.y]
         down_right = [down_left[0] + self.up_side, down_left[1]]
         up_left = [down_left[0], -self.lateral_side + down_left[1]]
         up_right = [self.up_side + down_left[0], -self.lateral_side + down_left[1]]
-        opora = [self.x, self.y - self.lateral_side / 2]
+
         pygame.draw.polygon(self.screen, self.color, (down_left,
                                                       turn(down_right, self.an, down_left),
                                                       turn(up_right, self.an, down_left),
                                                       turn(up_left, self.an, down_left)))
 
     def power_up(self):
+        """
+        Увеличения потенциального импульса снаряда. Также проичходит удлинение орудия
+        :return:
+        """
         if self.f2_on:
-            if self.f2_power < 70:
+            if self.f2_power < self.max_power:
                 self.f2_power += 1.5
                 self.up_side += 1.5
             self.color = RED
@@ -276,9 +341,9 @@ class Gun:
             self.up_side = 15
 
 
-class Player_Gun(Gun):
-    def __init__(self, screen, x0, y0):
-        super().__init__(screen, x0, y0)
+class PlayerGun(Gun):
+    def __init__(self, object_screen, x0, y0):
+        super().__init__(object_screen, x0, y0)
         self.figure = 'tank'
         self.live = 1
 
@@ -290,8 +355,8 @@ class Player_Gun(Gun):
 
     def draw_tank(self):
         pygame.draw.circle(self.screen, GREEN, [self.x, self.y], self.lateral_side + 2)
-        l = 20
-        pygame.draw.rect(self.screen, GREY, [self.x - l / 2, self.y, l, self.lateral_side + 3])
+        platform = 20
+        pygame.draw.rect(self.screen, GREY, [self.x - platform / 2, self.y, platform, self.lateral_side + 3])
 
     def move_left(self):
         self.x -= 20
@@ -300,15 +365,15 @@ class Player_Gun(Gun):
         self.x += 20
 
 
-class Bot_gun(Gun):
-    def __init__(self, screen, x0, y0):
-        super().__init__(screen, x0, y0)
+class BotGun(Gun):
+    def __init__(self, object_screen, x0, y0):
+        super().__init__(object_screen, x0, y0)
         self.bullet_type = 1
 
 
 class Target:
-    def __init__(self, screen, x0, y0, vx, vy):
-        self.screen = screen
+    def __init__(self, object_screen, x0, y0, vx, vy):
+        self.screen = object_screen
         self.x = x0
         self.y = y0
         self.live = 1
@@ -317,9 +382,9 @@ class Target:
         self.live = 1
 
 
-class Target_ball(Target):
-    def __init__(self, screen, x0, y0, vx, vy):
-        super().__init__(screen, x0, y0, vx, vy)
+class TargetBall(Target):
+    def __init__(self, object_screen, x0, y0, vx, vy):
+        super().__init__(object_screen, x0, y0, vx, vy)
         self.score = 0
         self.r = rnd(10, 50)
         self.figure = 'ball'
@@ -341,14 +406,7 @@ class Target_ball(Target):
             self.y -= self.vy
 
         # Проверка, не вышел ли шар за стенку
-        if self.x < self.r:
-            self.x = self.r
-        if self.x > WIDTH - self.r:
-            self.x = WIDTH - self.r
-        if self.y < self.r:
-            self.y = self.r
-        if self.y > HEIGHT - self.r:
-            self.y = HEIGHT - self.r
+        self.x, self.y = border_control('ball', self.x, self.y, self.r)
 
         # Удар о стенку
         if WIDTH <= self.x + self.r or self.x - self.r <= 0:
@@ -357,24 +415,13 @@ class Target_ball(Target):
             self.vy = -1 * (self.vy / 2)
 
     def draw(self):
-        pygame.draw.circle(
-            self.screen,
-            self.color,
-            (self.x, self.y),
-            self.r
-        )
-        pygame.draw.circle(
-            self.screen,
-            'black',
-            (self.x, self.y),
-            self.r,
-            width=1
-        )
+        pygame.draw.circle(self.screen, self.color, (self.x, self.y), self.r)
+        pygame.draw.circle(self.screen, 'black', (self.x, self.y), self.r, width=1)
 
 
-class Target_square(Target):
-    def __init__(self, screen, x, y, vx, vy):
-        super().__init__(screen, x, y, vx, vy)
+class TargetSquare(Target):
+    def __init__(self, object_screen, x, y, vx, vy):
+        super().__init__(object_screen, x, y, vx, vy)
         self.points = 0
         self.x = 0
         self.y = 0
@@ -391,14 +438,7 @@ class Target_square(Target):
         self.y -= self.vy + g / 2
         self.vy -= g
 
-        if self.x < 0:
-            self.x = 0
-        if self.x > WIDTH - self.a:
-            self.x = WIDTH - self.a
-        if self.y < 0:
-            self.y = 0
-        if self.y > HEIGHT - self.a:
-            self.y = HEIGHT - self.a
+        self.x, self.y = border_control('square', self.x, self.y, self.a)
 
         if WIDTH <= self.x + self.a or self.x <= 0:
             self.vx = -1 * self.vx / abs(self.vx) * rnd(10, 20)
@@ -414,8 +454,8 @@ class Target_square(Target):
 
 
 class Bomber:
-    def __init__(self, screen, x0):
-        self.screen = screen
+    def __init__(self, object_screen, x0):
+        self.screen = object_screen
         self.x = x0
         self.y = 0
         self.vx = 2
@@ -436,18 +476,18 @@ class Bomber:
     def draw(self):
         pygame.draw.rect(self.screen, GREY, [self.x, self.y, self.up_side, self.lateral_side])
 
-    def drop(self, type_of_bullet, target):
+    def drop(self, type_of_bullet, aim):
         if type_of_bullet == 'ball':
-            target.x = self.x + self.up_side / 2
-            target.y = self.y + self.lateral_side / 2
-            target.vx = self.vx
-            target.vy = rnd(20, 30)
+            aim.x = self.x + self.up_side / 2
+            aim.y = self.y + self.lateral_side / 2
+            aim.vx = self.vx
+            aim.vy = rnd(20, 30)
 
         else:
-            target.x = self.x
-            target.y = self.y + self.lateral_side / 2
-            target.vx = self.vx
-            target.vy = rnd(20, 30)
+            aim.x = self.x
+            aim.y = self.y + self.lateral_side / 2
+            aim.vx = self.vx
+            aim.vy = rnd(20, 30)
 
 
 pygame.init()
@@ -460,20 +500,30 @@ bombers = []
 score = 0
 
 clock = pygame.time.Clock()
-gun = Player_Gun(screen, 60, 590)
+
+gun = PlayerGun(screen, 60, 590)
+
 bomber_ball = Bomber(screen, 60)
 bomber_square = Bomber(screen, 300)
 bombers.append(bomber_ball)
 bombers.append(bomber_square)
-target1 = Target_ball(screen, 0, 0, 0, 0)
-target2 = Target_square(screen, 0, 0, 0, 0)
+
+target1 = TargetBall(screen, 0, 0, 0, 0)
+target2 = TargetSquare(screen, 0, 0, 0, 0)
 targets.append(target1)
 targets.append(target2)
-bots.append(Bot_gun(screen, 20, 100))
-bots.append(Bot_gun(screen, 570, 100))
+
+bot1 = BotGun(screen, 0, 100)
+bot2 = BotGun(screen, 795, 100)
+bot1.max_power = 16
+bot2.max_power = 16
+bots.append(bot1)
+bots.append(bot2)
+
 finished = False
 check = 0
 flag = 0
+
 bomber_ball.drop('ball', target1)
 bomber_square.drop('square', target2)
 while not finished:
@@ -482,6 +532,7 @@ while not finished:
     num_of_hits = pygame.font.Font(None, 24)
     text1 = num_of_hits.render(str(score), True, (0, 0, 0))
     screen.blit(text1, (10, 10))
+
     if gun.live == 1:
         gun.draw()
         gun.draw_tank()
@@ -526,6 +577,7 @@ while not finished:
     elif keys[pygame.K_a]:
         if gun.x != 20:
             gun.move_left()
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             finished = True
@@ -533,31 +585,33 @@ while not finished:
             if event.key == pygame.K_b:
                 gun.change_bullet()
             if event.key == pygame.K_a:
-                if gun.x != 20:
+                if gun.x > 20:
                     gun.move_left()
             if event.key == pygame.K_d:
-                if gun.y != 780:
+                if gun.x < 100:
                     gun.move_right()
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            if not check:
+            if gun.live:
                 gun.fire2_start()
         elif event.type == pygame.MOUSEBUTTONUP:
-            if not check:
+            if gun.live:
                 gun.fire2_end(event.pos, bullets)
                 bullet += 1
         elif event.type == pygame.MOUSEMOTION:
-            gun.targetting(event.pos)
+            gun.targeting(event.pos)
 
-    for i, bot in enumerate(bots):
-        if not bot.f2_on:
-            bot.fire2_start()
-        elif bot.f2_power == rnd(30, 70):
-            bot.fire2_end([gun.x, gun.y], bullets)
-        else:
-            bot.targetting([gun.x, gun.y])
+    for bot in bots:
+        if gun.live:
+            if not bot.f2_on:
+                bot.fire2_start()
+            elif bot.f2_power == rnd(0, 17):
+                bot.fire2_end([gun.x, gun.y], bullets)
+            else:
+                bot.targeting([gun.x, gun.y])
 
     for bomber in bombers:
         bomber.move()
+
     for i, b in enumerate(bullets):
         if b.live > 0:
             b.move()
@@ -565,12 +619,12 @@ while not finished:
         else:
             bullets.pop(i)
 
-        for i, target in enumerate(targets):
-            if b.hittest(target) and target.live:
+        for target in targets:
+            if b.hit_test(target) and target.live:
                 target.live = 0
                 target.hit()
 
-        if b.hittest(gun) and gun.live:
+        if b.hit_test(gun) and gun.live:
             gun.live = 0
 
     for bot in bots:

@@ -237,7 +237,7 @@ class Rect(Bullet):
             points = [up_right, down_right]
             for point in points:
                 d = dist(obj.x, obj.y, point[0], point[1])
-                return d <= obj.lateral_side + 8
+                return d <= obj.lateral_side + 4
 
 
 class Gun:
@@ -328,7 +328,7 @@ class Gun:
 
     def power_up(self):
         """
-        Увеличения потенциального импульса снаряда. Также проичходит удлинение орудия
+        Увеличения потенциального импульса снаряда. Также происходит удлинение орудия
         :return:
         """
         if self.f2_on:
@@ -343,36 +343,75 @@ class Gun:
 
 class PlayerGun(Gun):
     def __init__(self, object_screen, x0, y0):
+        """
+        Орудие игрока - это танк. Может двигаться.
+        :param object_screen: экран на котором изображается танк
+        :param x0: начальная x координата танка
+        :param y0: начальная y координата танка
+
+        """
         super().__init__(object_screen, x0, y0)
         self.figure = 'tank'
+        self.platform = 20
         self.live = 1
 
     def change_bullet(self):
+        """
+        Меняет тип снаряда.
+        :return:
+        """
         if self.bullet_type == 1:
             self.bullet_type = 0
         else:
             self.bullet_type += 1
 
     def draw_tank(self):
+        """
+        Рисует платформу танка, башню.
+        :return:
+        """
         pygame.draw.circle(self.screen, GREEN, [self.x, self.y], self.lateral_side + 2)
-        platform = 20
-        pygame.draw.rect(self.screen, GREY, [self.x - platform / 2, self.y, platform, self.lateral_side + 3])
+        pygame.draw.rect(self.screen, GREY, [self.x - self.platform / 2, self.y, self.platform, self.lateral_side + 3])
 
     def move_left(self):
-        self.x -= 20
+        """
+        Движение танка влево.
+        :return:
+        """
+        if self.x > 20:
+            self.x -= 20
 
     def move_right(self):
-        self.x += 20
+        """
+        Движение танка вправо.
+        :return:
+        """
+        if self.x < WIDTH - 20:
+            self.x += 20
 
 
 class BotGun(Gun):
     def __init__(self, object_screen, x0, y0):
+        """
+        Создаёт орудие, которое управляется программой.
+        :param object_screen:
+        :param x0:
+        :param y0:
+        """
         super().__init__(object_screen, x0, y0)
         self.bullet_type = 1
 
 
 class Target:
     def __init__(self, object_screen, x0, y0, vx, vy):
+        """
+        Создаёт мишень.
+        :param object_screen: экран, на котором находится мишень
+        :param x0: опорная x координата мишени
+        :param y0: опорная y координата мишени
+        :param vx: начальная скорость по x
+        :param vy: начальная скорость по y
+        """
         self.screen = object_screen
         self.x = x0
         self.y = y0
@@ -384,6 +423,14 @@ class Target:
 
 class TargetBall(Target):
     def __init__(self, object_screen, x0, y0, vx, vy):
+        """
+        Создаёт мишень в форме шара
+        :param object_screen: экран, на котором находится мишень
+        :param x0: опорная x координата мишени
+        :param y0: опорная y координата мишени
+        :param vx: начальная скорость по x
+        :param vy: начальная скорость по y
+        """
         super().__init__(object_screen, x0, y0, vx, vy)
         self.score = 0
         self.r = rnd(10, 50)
@@ -405,10 +452,8 @@ class TargetBall(Target):
             self.x += self.vx
             self.y -= self.vy
 
-        # Проверка, не вышел ли шар за стенку
         self.x, self.y = border_control('ball', self.x, self.y, self.r)
 
-        # Удар о стенку
         if WIDTH <= self.x + self.r or self.x - self.r <= 0:
             self.vx = -1 * self.vx
         elif HEIGHT <= self.y + self.r or self.y - self.r <= 0:
@@ -455,6 +500,11 @@ class TargetSquare(Target):
 
 class Bomber:
     def __init__(self, object_screen, x0):
+        """
+        Сбрасывает цели вниз.
+        :param object_screen:
+        :param x0:
+        """
         self.screen = object_screen
         self.x = x0
         self.y = 0
@@ -477,6 +527,12 @@ class Bomber:
         pygame.draw.rect(self.screen, GREY, [self.x, self.y, self.up_side, self.lateral_side])
 
     def drop(self, type_of_bullet, aim):
+        """
+        Сбрасывание мишени aim.
+        :param type_of_bullet:
+        :param aim:
+        :return:
+        """
         if type_of_bullet == 'ball':
             aim.x = self.x + self.up_side / 2
             aim.y = self.y + self.lateral_side / 2
@@ -597,7 +653,7 @@ while not finished:
             if gun.live:
                 gun.fire2_end(event.pos, bullets)
                 bullet += 1
-        elif event.type == pygame.MOUSEMOTION:
+        if event.type == pygame.MOUSEMOTION:
             gun.targeting(event.pos)
 
     for bot in bots:

@@ -509,8 +509,8 @@ class Bomber:
         self.x = x0
         self.y = 0
         self.vx = 2
-        self.up_side = 20
-        self.lateral_side = 40
+        self.up_side = 70
+        self.lateral_side = 80
 
     def move(self):
         self.x += self.vx
@@ -600,8 +600,7 @@ while not finished:
     for bot in bots:
         bot.draw()
 
-    for bomber in bombers:
-        bomber.draw()
+
 
     for target in targets:
         if target.live == 1:
@@ -619,6 +618,9 @@ while not finished:
                 target.live = 1
                 bullet = 0
                 check = 0
+
+    for bomber in bombers:
+        bomber.draw()
 
     for b in bullets:
         if b.live > 0:
